@@ -5,12 +5,11 @@ class FiniteAutomaton:
     def __init__(self):
         self.states = set()
         self.symbols = set()
-        self.transitions = dict()
-        self.epsilon_transitions = dict()
+        self.transitions = dict()  # (state, symbol) -> set of states
+        self.epsilon_transitions = dict()  # state -> set of states
         self.start_state = None
         self.accept_states = set()
         self.type = "DFA"
-        self.current_states = set()
 
     def load_from_file(self, file_path):
         try:
@@ -49,19 +48,12 @@ class FiniteAutomaton:
 
         self._process_transitions(sections['Rules'])
         
+        # Process additional epsilon rules if they exist
         if 'EpsilonRules' in sections:
             self._process_epsilon_transitions(sections['EpsilonRules'])
             self.type = "NFA"
         
-        self.reset()
         return None
-
-    def reset(self):
-        """Reset the automaton to initial state"""
-        if self.type == "DFA":
-            self.current_state = self.start_state
-        else:
-            self.current_states = self._epsilon_closure({self.start_state})
 
     def _parse_sections(self, content):
         sections = {}
@@ -88,15 +80,24 @@ class FiniteAutomaton:
             
             from_state, symbol, to_state = parts
             
-            if (from_state not in self.states or 
-                to_state not in self.states or 
-                (symbol != 'ε' and symbol not in self.symbols)):
+            if from_state not in self.states or to_state not in self.states:
                 continue
             
-            key = (from_state, symbol)
-            if key not in self.transitions:
-                self.transitions[key] = set()
-            self.transitions[key].add(to_state)
+            # Handle epsilon transitions
+            if symbol == 'ε':
+                if from_state not in self.epsilon_transitions:
+                    self.epsilon_transitions[from_state] = set()
+                self.epsilon_transitions[from_state].add(to_state)
+                self.type = "NFA"  # Mark as NFA if epsilon transitions exist
+            else:
+                # Handle regular transitions
+                if symbol not in self.symbols:
+                    continue
+                    
+                key = (from_state, symbol)
+                if key not in self.transitions:
+                    self.transitions[key] = set()
+                self.transitions[key].add(to_state)
 
     def _process_epsilon_transitions(self, epsilon_rules):
         for rule in epsilon_rules:
@@ -127,60 +128,140 @@ class FiniteAutomaton:
         
         return closure
 
-    def get_possible_transitions(self):
-        """Return available symbols and their target states"""
-        transitions_info = {}
+    def get_possible_transitions(self, current_states, symbol):
+        """Get all possible next states for given symbol from current states"""
+        next_states = set()
         
-        if self.type == "DFA":
-            current = self.current_state
-            for symbol in self.symbols:
-                key = (current, symbol)
-                if key in self.transitions:
-                    transitions_info[symbol] = next(iter(self.transitions[key]))
-                else:
-                    transitions_info[symbol] = current  # Stay in current state
-        else:
-            for symbol in self.symbols:
-                targets = set()
-                for state in self.current_states:
-                    key = (state, symbol)
-                    if key in self.transitions:
-                        targets.update(self.transitions[key])
-                    else:
-                        targets.add(state)  # Stay in current state
-                transitions_info[symbol] = self._epsilon_closure(targets)
-        
-        return transitions_info
-
-    def step(self, symbol):
-        """Process one input symbol and return current state(s)"""
-        if symbol not in self.symbols:
-            return None, f"Invalid symbol '{symbol}'"
-        
-        if self.type == "DFA":
-            key = (self.current_state, symbol)
+        for state in current_states:
+            key = (state, symbol)
             if key in self.transitions:
-                self.current_state = next(iter(self.transitions[key]))
-            # If no transition, stay in current state
-            return self.current_state, None
-        else:
-            next_states = set()
-            for state in self.current_states:
-                key = (state, symbol)
-                if key in self.transitions:
-                    next_states.update(self.transitions[key])
-                else:
-                    next_states.add(state)
-            
-            self.current_states = self._epsilon_closure(next_states)
-            return self.current_states, None
+                next_states.update(self.transitions[key])
+        
+        return self._epsilon_closure(next_states) if next_states else set()
 
-    def is_accepted(self):
-        """Check if current state(s) are accept states"""
+    def get_available_symbols(self, current_states):
+        """Get all symbols that have transitions from current states"""
+        available = set()
+        
+        for state in current_states:
+            for (from_state, symbol), _ in self.transitions.items():
+                if from_state == state:
+                    available.add(symbol)
+        
+        return available
+
+    def interactive_simulation(self):
+        """Run interactive step-by-step simulation"""
+        print(f"\n=== Interactive {self.type} Simulation ===")
+        print("Enter symbols one by one, or special commands:")
+        print("  'reset' - restart from beginning")
+        print("  'status' - show current status")
+        print("  'help' - show available symbols")
+        print("  'quit' - exit simulation")
+        print("-" * 50)
+        
+        # Initialize current states
         if self.type == "DFA":
-            return self.current_state in self.accept_states
+            current_states = {self.start_state}
         else:
-            return bool(self.current_states & self.accept_states)
+            current_states = self._epsilon_closure({self.start_state})
+        
+        input_so_far = []
+        
+        self._show_status(current_states, input_so_far)
+        
+        while True:
+            print(f"\nEnter next symbol:")
+            user_input = input(">>> ").strip()
+            
+            if user_input.lower() == 'quit':
+                print("Goodbye!")
+                break
+            elif user_input.lower() == 'reset':
+                if self.type == "DFA":
+                    current_states = {self.start_state}
+                else:
+                    current_states = self._epsilon_closure({self.start_state})
+                input_so_far = []
+                print("\nReset to initial state")
+                self._show_status(current_states, input_so_far)
+                continue
+            elif user_input.lower() == 'status':
+                self._show_status(current_states, input_so_far)
+                continue
+            elif user_input.lower() == 'help':
+                self._show_help(current_states)
+                continue
+            
+            # Process the symbol
+            if len(user_input) != 1:
+                print("Please enter exactly one symbol")
+                continue
+            
+            symbol = user_input
+            
+            # Check if symbol is valid
+            if symbol not in self.symbols:
+                print(f"Invalid symbol '{symbol}'. Valid symbols: {sorted(self.symbols)}")
+                continue
+            
+            # Get next states
+            next_states = self.get_possible_transitions(current_states, symbol)
+            
+            if not next_states:
+                print(f"No transitions available from current state(s) on symbol '{symbol}'")
+                print("Automaton is stuck - string would be REJECTED")
+                print("Use 'reset' to start over")
+                continue
+            
+            # Update state
+            current_states = next_states
+            input_so_far.append(symbol)
+            
+            print(f"Processed symbol '{symbol}'")
+            
+            # Check if we reached an accepting state
+            accepting_states = current_states & self.accept_states
+            if accepting_states:
+                print(f"\nACCEPTED - Reached accepting state(s): {sorted(accepting_states)}")
+                print(f"Final input: {''.join(input_so_far)}\n")
+                sys.exit(0)
+            
+            
+            self._show_status(current_states, input_so_far)
+
+    def _show_status(self, current_states, input_so_far):
+        """Show current automaton status"""
+        print("\n" + "="*50)
+        print(f"CURRENT STATUS:")
+        print(f"   Input so far: {''.join(input_so_far) if input_so_far else '(empty)'}")
+        print(f"   Current state(s): {sorted(current_states)}")
+        print(f"   Not in accepting state")
+        
+        # Show transitions for each symbol
+        print(f"   Possible transitions:")
+        for symbol in sorted(self.symbols):
+            next_states = self.get_possible_transitions(current_states, symbol)
+            if next_states:
+                accepting_next = next_states & self.accept_states
+                if accepting_next:
+                    print(f"     '{symbol}' -> {sorted(next_states)} (accepting: {sorted(accepting_next)})")
+                else:
+                    print(f"     '{symbol}' -> {sorted(next_states)}")
+        
+        print("="*50)
+
+    def _show_help(self, current_states):
+        """Show detailed help about available transitions"""
+        print("\nAVAILABLE TRANSITIONS:")
+        
+        for symbol in sorted(self.symbols):
+            next_states = self.get_possible_transitions(current_states, symbol)
+            if next_states:
+                print(f"   '{symbol}' -> {sorted(next_states)}")
+                accepting_next = next_states & self.accept_states
+                if accepting_next:
+                    print(f"       (would reach accepting state(s): {sorted(accepting_next)})")
 
 def main():
     if len(sys.argv) != 2:
@@ -194,59 +275,14 @@ def main():
         print(error)
         return
     
-    print(f"\nLoaded {automaton.type} with:")
+    print(f"Loaded {automaton.type} with:")
     print(f"- States: {', '.join(sorted(automaton.states))}")
     print(f"- Symbols: {', '.join(sorted(automaton.symbols))}")
     print(f"- Start state: {automaton.start_state}")
     print(f"- Accept states: {', '.join(sorted(automaton.accept_states))}")
     
-    automaton.reset()
-    
-    while True:
-        # Display current status
-        print("\n" + "="*50)
-        print(f"Current state(s): {automaton.current_state if automaton.type == 'DFA' else ', '.join(sorted(automaton.current_states))}")
-        
-        if automaton.is_accepted():
-            return
-        
-        # Show available transitions
-        transitions = automaton.get_possible_transitions()
-        print("\nAvailable transitions:")
-        for symbol, target in sorted(transitions.items()):
-            if automaton.type == "DFA":
-                print(f"  '{symbol}': {target} (from current state)")
-            else:
-                print(f"  '{symbol}': {{{', '.join(sorted(target))}}}")
-        
-        # User input
-        print("\nOptions:")
-        print("  <symbol> - Input a symbol from above")
-        print("  reset    - Reset automaton to start state")
-        print("  quit     - Exit program")
-        user_input = input("\nYour choice: ").strip().lower()
-        
-        if user_input == 'quit':
-            break
-        elif user_input == 'reset':
-            automaton.reset()
-            print(f"\nAutomaton reset to initial state {automaton.start_state}")
-            continue
-        elif user_input in automaton.symbols:
-            result, error = automaton.step(user_input)
-            if error:
-                print(error)
-            else:
-                print(f"\nApplied '{user_input}' transition")
-                if automaton.type == "DFA":
-                    print(f"New state: {result}")
-                else:
-                    print(f"New states: {{{', '.join(sorted(result))}}}")
-                
-                if automaton.is_accepted():
-                    print("★ REACHED ACCEPT STATE ★")
-        else:
-            print(f"\nInvalid input. Please enter one of: {', '.join(sorted(automaton.symbols))}, 'reset', or 'quit'")
+    # Start interactive simulation
+    automaton.interactive_simulation()
 
 if __name__ == "__main__":
     main()
