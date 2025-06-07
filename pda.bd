@@ -1,0 +1,27 @@
+$states # pda care accepta sirurile de caractere tip ( a^n,b^m | n>=m )
+q0
+q1
+q2
+
+$alphabet
+a
+b
+
+$stack_alphabet
+A
+B
+$
+
+$start_state
+q0
+
+$accept_states
+q1
+q2
+
+$transitions
+q0 > a,epsilon > q0,A    # (q0, a, epsilon) -> (q0, A)
+q0 > a,A > q0,AA
+q0 > b,A > q1,epsilon
+q1 > b,A > q1,epsilon
+q1 > epsilon,$ > q2,$

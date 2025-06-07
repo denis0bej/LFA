@@ -1,0 +1,22 @@
+$States
+q0
+denis are mere
+q2
+q3
+q4
+$Symbols
+a
+b
+$Rules
+q0 > a > denis are mere
+denis are mere > b > q2
+q2 > a > q3
+q2 > b > q4
+$EpsilonRules
+denis are mere > q4
+$Start
+q0
+$Accept
+q3
+q4
+$End
