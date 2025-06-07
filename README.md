@@ -1,5 +1,7 @@
 # Limbaje Formale și Automate (An 1 Sem. 2)
 
+**Autor:** Bejan-Topse Denis-Marian
+
 Pentru rularea acestor scripturi nu trebuie să instalezi librării suplimentare, folosesc doar librăriile standard Python.
 
 Fișierele atașate sunt rezultatul următoarelor teme:
