@@ -79,9 +79,13 @@ class FiniteAutomaton:
             
             from_state, symbol, to_state = parts
             
+            # Skip epsilon transitions - they should be in EpsilonRules
+            if symbol == 'ε':
+                continue
+                
             if (from_state not in self.states or 
                 to_state not in self.states or 
-                (symbol != 'ε' and symbol not in self.symbols)):
+                symbol not in self.symbols):
                 continue
             
             key = (from_state, symbol)
@@ -118,8 +122,11 @@ class FiniteAutomaton:
             
             key = (current_state, symbol)
             if key in self.transitions:
+                # DFA should have exactly one transition
                 current_state = next(iter(self.transitions[key]))
-            # If no transition, stay in current state
+            else:
+                # No transition defined - reject
+                return False, f"No transition from '{current_state}' on '{symbol}'"
             
         return current_state in self.accept_states, current_state
 
@@ -135,10 +142,12 @@ class FiniteAutomaton:
                 key = (state, symbol)
                 if key in self.transitions:
                     next_states.update(self.transitions[key])
-                else:
-                    # If no transition, stay in current state
-                    next_states.add(state)
+                # Note: If no transition exists, this branch dies (correct NFA behavior)
             
+            # If no states remain, the string is rejected
+            if not next_states:
+                return False, "No valid transitions available"
+                
             current_states = self._epsilon_closure(next_states)
         
         return bool(current_states & self.accept_states), current_states
@@ -177,19 +186,21 @@ def main():
     print(f"- Accept states: {', '.join(sorted(automaton.accept_states))}")
     
     while True:
-        print("\nEnter input string (space-separated symbols) or 'quit':")
+        print("\nEnter input string or 'quit':")
         user_input = input().strip()
         
         if user_input.lower() == 'quit':
             break
         
-        input_symbols = user_input.split()
+        # Process input as sequence of characters (more standard)
+        # If you want space-separated symbols, use: input_symbols = user_input.split()
+        input_symbols = list(user_input) if user_input else []
         accepted, result = automaton.simulate(input_symbols)
         
         if isinstance(result, set):
             result_str = ', '.join(sorted(result))
         else:
-            result_str = result
+            result_str = str(result)
         
         if accepted:
             print(f"ACCEPTED (Final state(s): {result_str})")
