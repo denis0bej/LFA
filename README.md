@@ -1,40 +1,82 @@
-# Limbaje formale si automate (An 1 Sem. 2)
-Pentru rularea acestor scripturi nu trebuie să instalezi librării suplimentare, folosesc doar librăriile standard Python.  
-Fisierele atasate sunt rezultatul urmatoarelor teme:
-### 1. - DFA si NFA -
-  - Ambele abordate in fisierul [machine.py](machine.py).  
-  - Fisierul de input este [machine.bd](machine.bd).
-  - Reprezentarea grafica a NFA-ului din fisier:
->![Diagrama DFA/NFA](imagini/diag1.png)
-  - Comanda de rulare este urmatoarea:
->  ```bash
->  python3 machine.py machine.bd  
-### 2. - Joc in DFA/NFA -
-  - Pentru joc am creat un script separat care accepta inputul *symbol cu symbol* pentru a fi mai distractiv, scriptul este [secvential_input.py](secvential_input.py).  
-  - Fisierul de input este [castle_game.bd](castle_game.bd).
-  - Actiunile posibile sunt:
-    - n - mergi in nord
-    - e - mergi in est
-    - s - mergi in sud
-    - w - mergi in vest
-    - p - ridica cheie (pick up)
-  - Reprezentarea grafica a jocului:
->![Diagrama abstracta - castle game](imagini/castle_game.png)
-  - Reprezentarea de mai sus e o forma simplificata a diagramei adevarate intrucat fiecare camera are o forma **cu** si **fara** cheie pentru a simula camerele incuiate 
-  - Comanda de rulare este urmatoarea:
->  ```bash
->  python3 secvential_input.py castle_game.bd
-### 3. - PDA -
-  - Abordata in fisierul [pda.py](pda.py).  
-  - Fisierul de input este [pda.bd](pda.bd).
-  - Acest pda verifica daca inputul este de forma { a<sup>n</sup>b<sup>m</sup> | n>0, m>0, n>m }
-  - Comanda de rulare este urmatoarea:
->  ```bash
->  python3 pda.py pda.bd
-### 4. - Masina Turing -
-  - Abordata in fisierul [turing.py](turing.py).  
-  - Fisierul de input este [turing.bd](turing.bd).
-  - Aceasta masina turing verifica daca inputul este de forma { 0<sup>n</sup>1<sup>n</sup> | n>0 }
-  - Comanda de rulare este urmatoarea:
->  ```bash
->  python3 turing.py turing.bd
+# Limbaje Formale și Automate (An 1 Sem. 2)
+
+Pentru rularea acestor scripturi nu trebuie să instalezi librării suplimentare, folosesc doar librăriile standard Python.
+
+Fișierele atașate sunt rezultatul următoarelor teme:
+
+---
+
+## 1. DFA și NFA
+
+**Script:** [machine.py](machine.py)  
+**Input:** [machine.bd](machine.bd)
+
+Ambele tipuri de automate sunt abordate în același fișier.
+
+### Reprezentare grafică
+![Diagrama DFA/NFA](imagini/diag1.png)
+
+### Rulare
+```bash
+python3 machine.py machine.bd
+```
+
+---
+
+## 2. Joc în DFA/NFA
+
+**Script:** [secvential_input.py](secvential_input.py)  
+**Input:** [castle_game.bd](castle_game.bd)
+
+Pentru joc am creat un script separat care acceptă inputul *symbol cu symbol* pentru a fi mai distractiv.
+
+### Acțiuni posibile
+- `n` - mergi în nord
+- `e` - mergi în est  
+- `s` - mergi în sud
+- `w` - mergi în vest
+- `p` - ridică cheie (pick up)
+
+### Reprezentare grafică
+![Diagrama abstractă - castle game](imagini/castle_game.png)
+
+**Notă:** Reprezentarea de mai sus este o formă simplificată a diagramei adevărate întrucât fiecare cameră are o formă **cu** și **fără** cheie pentru a simula camerele încuiate.
+
+### Rulare
+```bash
+python3 secvential_input.py castle_game.bd
+```
+
+---
+
+## 3. PDA (Pushdown Automaton)
+
+**Script:** [pda.py](pda.py)  
+**Input:** [pda.bd](pda.bd)
+
+Acest PDA verifică dacă inputul este de forma:
+```
+{ a^n b^m | n>0, m>0, n>m }
+```
+
+### Rulare
+```bash
+python3 pda.py pda.bd
+```
+
+---
+
+## 4. Mașina Turing
+
+**Script:** [turing.py](turing.py)  
+**Input:** [turing.bd](turing.bd)
+
+Această mașină Turing verifică dacă inputul este de forma:
+```
+{ 0^n 1^n | n>0 }
+```
+
+### Rulare
+```bash
+python3 turing.py turing.bd
+```
